@@ -17,7 +17,7 @@
 
 - (void)resetValues {
     NSUserDefaults *p = [[NSUserDefaults alloc] initWithSuiteName:FD_DOMAIN];
-    [p setFloat:34 forKey:@"sideInset"];
+    [p setFloat:16 forKey:@"iconSpacing"]; [p setFloat:12 forKey:@"sidePadding"];
     [p setFloat:20 forKey:@"bottomMargin"];
     [p setFloat:82 forKey:@"dockHeight"];
     [p setFloat:30 forKey:@"cornerRadius"];
