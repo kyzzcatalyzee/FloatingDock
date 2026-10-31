@@ -8,8 +8,9 @@
 
 @interface SBDockView : UIView @end
 
-static BOOL  gEnabled = YES;
-static CGFloat gSide = 12, gBottom = 10, gTop = 6, gRadius = 32;
+static BOOL    gEnabled = YES;
+static CGFloat gSide = 34, gBottom = 20, gHeight = 82, gRadius = 30;
+static BOOL    gAdjusting = NO;
 static NSHashTable<UIView *> *gDocks;
 
 static CGFloat FDFloat(NSUserDefaults *d, NSString *key, CGFloat def) {
@@ -21,46 +22,69 @@ static void FDLoadPrefs(void) {
     NSUserDefaults *d = [[NSUserDefaults alloc] initWithSuiteName:FD_DOMAIN];
     id e = [d objectForKey:@"enabled"];
     gEnabled = e ? [e boolValue] : YES;
-    gSide    = FDFloat(d, @"sideInset", 12);
-    gBottom  = FDFloat(d, @"bottomMargin", 10);
-    gTop     = FDFloat(d, @"topInset", 6);
-    gRadius  = FDFloat(d, @"cornerRadius", 32);
+    gSide    = FDFloat(d, @"sideInset", 34);
+    gBottom  = FDFloat(d, @"bottomMargin", 20);
+    gHeight  = FDFloat(d, @"dockHeight", 82);
+    gRadius  = FDFloat(d, @"cornerRadius", 30);
 }
 
-// The dock background view (name differs a little between iOS versions).
-static UIView *FDBackground(UIView *dock) {
-    for (NSString *key in @[@"backgroundView", @"_backgroundView"]) {
-        @try {
-            id v = [dock valueForKey:key];
-            if ([v isKindOfClass:[UIView class]]) return v;
-        } @catch (__unused NSException *ex) {}
+// Where the dock should sit inside its parent.
+static CGRect FDTargetFrame(UIView *dock) {
+    CGRect p = dock.superview.bounds;
+    if (CGRectIsEmpty(p)) return dock.frame;
+    CGFloat w = MAX(120.0, p.size.width - gSide * 2.0);
+    return CGRectMake(CGRectGetMinX(p) + gSide, CGRectGetMaxY(p) - gBottom - gHeight, w, gHeight);
+}
+
+static void FDRound(UIView *v, CGFloat radius) {
+    v.layer.cornerRadius = radius;
+    v.layer.masksToBounds = (radius > 0);
+    if (@available(iOS 13.0, *)) v.layer.cornerCurve = kCACornerCurveContinuous;
+}
+
+// Round the dock background and every material view inside it (LiquidAss draws its glass there).
+static void FDStyleBackground(UIView *root, CGFloat radius, int depth) {
+    if (depth > 6) return;
+    for (UIView *v in root.subviews) {
+        NSString *cn = NSStringFromClass(v.class);
+        if ([cn isEqualToString:@"MTMaterialView"] ||
+            [cn containsString:@"BackgroundView"] ||
+            [cn containsString:@"WallpaperEffect"]) {
+            FDRound(v, radius);
+        }
+        FDStyleBackground(v, radius, depth + 1);
     }
-    return nil;
 }
 
 static void FDApply(UIView *dock) {
-    UIView *bg = FDBackground(dock);
-    if (!bg) return;
+    if (gAdjusting || !dock.superview) return;
+    CGFloat radius = gEnabled ? MIN(gRadius, gHeight / 2.0) : 0;
+    @try {
+        for (NSString *key in @[@"backgroundView", @"_backgroundView"]) {
+            id v = [dock valueForKey:key];
+            if ([v isKindOfClass:[UIView class]]) { FDRound((UIView *)v, radius); break; }
+        }
+    } @catch (__unused NSException *ex) {}
+    FDStyleBackground(dock, radius, 0);
+    if (!gEnabled) return;
 
-    if (!gEnabled) {
-        bg.layer.cornerRadius = 0;
-        bg.layer.masksToBounds = NO;
-        return;
+    CGRect target = FDTargetFrame(dock);
+    if (!CGRectEqualToRect(dock.frame, target)) {
+        gAdjusting = YES;
+        dock.frame = target;
+        [dock setNeedsLayout];
+        [dock layoutIfNeeded];
+        gAdjusting = NO;
     }
-    CGRect b = dock.bounds;
-    CGFloat w = MAX(0, b.size.width - gSide * 2.0);
-    CGFloat h = MAX(0, b.size.height - gTop - gBottom);
-    bg.frame = CGRectMake(gSide, gTop, w, h);
-    bg.layer.cornerRadius = MIN(gRadius, MIN(w, h) / 2.0);
-    if (@available(iOS 13.0, *)) bg.layer.cornerCurve = kCACornerCurveContinuous;
-    bg.layer.masksToBounds = YES;
 }
 
 static void FDReloadAll(void) {
     FDLoadPrefs();
     for (UIView *d in gDocks.allObjects) {
+        [d.superview setNeedsLayout];
         [d setNeedsLayout];
         [d layoutIfNeeded];
+        FDApply(d);
     }
 }
 
@@ -69,6 +93,13 @@ static void FDPrefsChanged(CFNotificationCenterRef c, void *o, CFStringRef n, co
 }
 
 %hook SBDockView
+- (void)setFrame:(CGRect)frame {
+    if (gEnabled && !gAdjusting && ((UIView *)self).superview) {
+        %orig(FDTargetFrame((UIView *)self));
+    } else {
+        %orig(frame);
+    }
+}
 - (void)layoutSubviews {
     %orig;
     if (!gDocks) gDocks = [NSHashTable weakObjectsHashTable];
