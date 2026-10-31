@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>items</key>
+	<array>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>General</string>
+			<key>footerText</key>
+			<string>Turns the Home Screen dock into a floating rounded dock. The dock stays in place when you open an app.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSwitchCell</string>
+			<key>label</key>
+			<string>Enable Tweak</string>
+			<key>key</key>
+			<string>enabled</string>
+			<key>default</key>
+			<true/>
+			<key>defaults</key>
+			<string>com.zilvyn.floatdock</string>
+			<key>PostNotification</key>
+			<string>com.zilvyn.floatdock/prefschanged</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Side Inset</string>
+			<key>footerText</key>
+			<string>Space between the dock and the left and right screen edges.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSliderCell</string>
+			<key>key</key>
+			<string>sideInset</string>
+			<key>default</key>
+			<real>12</real>
+			<key>min</key>
+			<real>0</real>
+			<key>max</key>
+			<real>40</real>
+			<key>showValue</key>
+			<true/>
+			<key>isSegmented</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.zilvyn.floatdock</string>
+			<key>PostNotification</key>
+			<string>com.zilvyn.floatdock/prefschanged</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Bottom Margin</string>
+			<key>footerText</key>
+			<string>Space between the dock and the bottom screen edge.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSliderCell</string>
+			<key>key</key>
+			<string>bottomMargin</string>
+			<key>default</key>
+			<real>10</real>
+			<key>min</key>
+			<real>0</real>
+			<key>max</key>
+			<real>30</real>
+			<key>showValue</key>
+			<true/>
+			<key>isSegmented</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.zilvyn.floatdock</string>
+			<key>PostNotification</key>
+			<string>com.zilvyn.floatdock/prefschanged</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Top Inset</string>
+			<key>footerText</key>
+			<string>Lower this if the icons look too low in the dock, raise it if they look too high.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSliderCell</string>
+			<key>key</key>
+			<string>topInset</string>
+			<key>default</key>
+			<real>6</real>
+			<key>min</key>
+			<real>0</real>
+			<key>max</key>
+			<real>30</real>
+			<key>showValue</key>
+			<true/>
+			<key>isSegmented</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.zilvyn.floatdock</string>
+			<key>PostNotification</key>
+			<string>com.zilvyn.floatdock/prefschanged</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Corner Radius</string>
+			<key>footerText</key>
+			<string>How round the dock corners are.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSliderCell</string>
+			<key>key</key>
+			<string>cornerRadius</string>
+			<key>default</key>
+			<real>32</real>
+			<key>min</key>
+			<real>0</real>
+			<key>max</key>
+			<real>45</real>
+			<key>showValue</key>
+			<true/>
+			<key>isSegmented</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.zilvyn.floatdock</string>
+			<key>PostNotification</key>
+			<string>com.zilvyn.floatdock/prefschanged</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSButtonCell</string>
+			<key>label</key>
+			<string>Reset Values</string>
+			<key>action</key>
+			<string>resetValues</string>
+		</dict>
+	</array>
+	<key>title</key>
+	<string>FloatDock</string>
+</dict>
+</plist>

@@ -1,0 +1,9 @@
+Package: com.zilvyn.floatdock
+Name: FloatDock
+Depends: mobilesubstrate, preferenceloader
+Version: 0.0.1
+Architecture: iphoneos-arm
+Description: Floating rounded dock for home button iPhones. The dock stays on the Home Screen when you open an app (iOS 16)
+Maintainer: zilvyn
+Author: zilvyn
+Section: Tweaks
