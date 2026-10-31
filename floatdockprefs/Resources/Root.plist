@@ -30,21 +30,49 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>Side Inset</string>
+			<string>Icon Spacing</string>
 			<key>footerText</key>
-			<string>Space between the dock and the left and right screen edges. Higher = narrower dock with icons closer together.</string>
+			<string>Space between the dock icons. The dock gets wider or narrower to fit them.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSliderCell</string>
 			<key>key</key>
-			<string>sideInset</string>
+			<string>iconSpacing</string>
 			<key>default</key>
-			<real>34</real>
+			<real>16</real>
 			<key>min</key>
 			<real>0</real>
 			<key>max</key>
-			<real>70</real>
+			<real>50</real>
+			<key>showValue</key>
+			<true/>
+			<key>isSegmented</key>
+			<false/>
+			<key>defaults</key>
+			<string>com.zilvyn.floatdock</string>
+			<key>PostNotification</key>
+			<string>com.zilvyn.floatdock/prefschanged</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSGroupCell</string>
+			<key>label</key>
+			<string>Side Padding</string>
+			<key>footerText</key>
+			<string>Space between the first and last icon and the edge of the dock.</string>
+		</dict>
+		<dict>
+			<key>cell</key>
+			<string>PSSliderCell</string>
+			<key>key</key>
+			<string>sidePadding</string>
+			<key>default</key>
+			<real>12</real>
+			<key>min</key>
+			<real>0</real>
+			<key>max</key>
+			<real>30</real>
 			<key>showValue</key>
 			<true/>
 			<key>isSegmented</key>
