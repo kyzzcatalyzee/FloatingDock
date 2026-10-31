@@ -32,7 +32,7 @@
 			<key>label</key>
 			<string>Side Inset</string>
 			<key>footerText</key>
-			<string>Space between the dock and the left and right screen edges.</string>
+			<string>Space between the dock and the left and right screen edges. Higher = narrower dock with icons closer together.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
@@ -40,11 +40,11 @@
 			<key>key</key>
 			<string>sideInset</string>
 			<key>default</key>
-			<real>12</real>
+			<real>34</real>
 			<key>min</key>
 			<real>0</real>
 			<key>max</key>
-			<real>40</real>
+			<real>70</real>
 			<key>showValue</key>
 			<true/>
 			<key>isSegmented</key>
@@ -68,7 +68,7 @@
 			<key>key</key>
 			<string>bottomMargin</string>
 			<key>default</key>
-			<real>10</real>
+			<real>20</real>
 			<key>min</key>
 			<real>0</real>
 			<key>max</key>
@@ -86,21 +86,21 @@
 			<key>cell</key>
 			<string>PSGroupCell</string>
 			<key>label</key>
-			<string>Top Inset</string>
+			<string>Dock Height</string>
 			<key>footerText</key>
-			<string>Lower this if the icons look too low in the dock, raise it if they look too high.</string>
+			<string>Height of the floating dock. Change it if the icons look too low or too high inside the dock.</string>
 		</dict>
 		<dict>
 			<key>cell</key>
 			<string>PSSliderCell</string>
 			<key>key</key>
-			<string>topInset</string>
+			<string>dockHeight</string>
 			<key>default</key>
-			<real>6</real>
+			<real>82</real>
 			<key>min</key>
-			<real>0</real>
+			<real>70</real>
 			<key>max</key>
-			<real>30</real>
+			<real>110</real>
 			<key>showValue</key>
 			<true/>
 			<key>isSegmented</key>
@@ -124,7 +124,7 @@
 			<key>key</key>
 			<string>cornerRadius</string>
 			<key>default</key>
-			<real>32</real>
+			<real>30</real>
 			<key>min</key>
 			<real>0</real>
 			<key>max</key>
