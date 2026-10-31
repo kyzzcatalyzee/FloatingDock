@@ -17,10 +17,10 @@
 
 - (void)resetValues {
     NSUserDefaults *p = [[NSUserDefaults alloc] initWithSuiteName:FD_DOMAIN];
-    [p setFloat:12 forKey:@"sideInset"];
-    [p setFloat:10 forKey:@"bottomMargin"];
-    [p setFloat:6 forKey:@"topInset"];
-    [p setFloat:32 forKey:@"cornerRadius"];
+    [p setFloat:34 forKey:@"sideInset"];
+    [p setFloat:20 forKey:@"bottomMargin"];
+    [p setFloat:82 forKey:@"dockHeight"];
+    [p setFloat:30 forKey:@"cornerRadius"];
     [p synchronize];
     CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(),
         CFSTR("com.zilvyn.floatdock/prefschanged"), NULL, NULL, YES);
