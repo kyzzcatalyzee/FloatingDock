@@ -35,6 +35,7 @@ static void FDLoadPrefs(void) {
 }
 
 static CGFloat FDRadius(void) { return MIN(gRadius, gHeight / 2.0); }
+static void FDPrepareMaterial(UIView *v);
 
 static BOOL FDInsideDock(UIView *v) {
     for (UIView *a = v.superview; a; a = a.superview) {
@@ -194,11 +195,62 @@ static void FDPrefsChanged(CFNotificationCenterRef c, void *o, CFStringRef n, co
     dispatch_async(dispatch_get_main_queue(), ^{ FDReloadAll(); });
 }
 
+// LiquidAss puts its glass NEXT to the material (same parent), and copies the material
+// corner radius only when it syncs. If the glass kept radius 0 it shows as a square.
+static void FDFixGlass(UIView *material) {
+    UIView *parent = material.superview;
+    if (!parent) return;
+    CGFloat r = FDRadius();
+    BOOL stale = NO;
+    for (UIView *g in parent.subviews) {
+        if (![NSStringFromClass(g.class) containsString:@"LGLiveBackdropView"]) continue;
+        if (fabs(g.layer.cornerRadius - r) > 0.5) stale = YES;
+    }
+    if (stale) {
+        // Setting the same frame makes LiquidAss sync the glass with the material again.
+        CGRect f = material.frame;
+        material.frame = f;
+    }
+}
+
 // Round a dock material and make LiquidAss redraw its glass with the rounded shape.
 static void FDPrepareMaterial(UIView *v) {
     CGFloat r = FDRadius();
     FDRound(v, r);
     FDFixBorders(v, r, 0);
+}
+
+static void FDForEachDockMaterial(UIView *root, int depth, void (^block)(UIView *)) {
+    if (depth > 6) return;
+    for (UIView *v in root.subviews) {
+        if ([NSStringFromClass(v.class) isEqualToString:@"MTMaterialView"]) block(v);
+        FDForEachDockMaterial(v, depth + 1, block);
+    }
+}
+
+// Re-round everything in every dock and re-sync the glass.
+static void FDFixAllDocks(void) {
+    if (!gEnabled) return;
+    for (UIView *dock in gDocks.allObjects) {
+        FDStyleBackground(dock, FDRadius(), 0);
+        FDForEachDockMaterial(dock, 0, ^(UIView *m) {
+            FDPrepareMaterial(m);
+            FDFixGlass(m);
+        });
+    }
+}
+
+// After the screen is unlocked (passcode or Touch ID) fix the dock a few times,
+// because SpringBoard rebuilds it in several steps.
+static void FDScheduleFixes(void) {
+    for (NSNumber *delay in @[@0.05, @0.25, @0.6, @1.2, @2.5]) {
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delay.doubleValue * NSEC_PER_SEC)),
+                       dispatch_get_main_queue(), ^{ FDFixAllDocks(); });
+    }
+}
+
+static void FDLockChanged(CFNotificationCenterRef c, void *o, CFStringRef n, const void *obj, CFDictionaryRef u) {
+    dispatch_async(dispatch_get_main_queue(), ^{ FDScheduleFixes(); });
 }
 
 %hook SBDockView
@@ -214,6 +266,7 @@ static void FDPrepareMaterial(UIView *v) {
     if (!gDocks) gDocks = [NSHashTable weakObjectsHashTable];
     [gDocks addObject:(UIView *)self];
     FDApply((UIView *)self);
+    FDForEachDockMaterial((UIView *)self, 0, ^(UIView *m) { FDFixGlass(m); });
 }
 // New background views are rounded as soon as they are added.
 - (void)didAddSubview:(UIView *)sub {
@@ -242,6 +295,7 @@ static void FDPrepareMaterial(UIView *v) {
                 UIView *sv = wv;
                 if (!sv || !gEnabled || !sv.window) return;
                 FDPrepareMaterial(sv);
+                FDFixGlass(sv);
                 [sv setNeedsLayout];
                 for (UIView *sub in sv.subviews) [sub setNeedsLayout];
             });
@@ -252,6 +306,22 @@ static void FDPrepareMaterial(UIView *v) {
     %orig;
     UIView *v = (UIView *)self;
     if (gEnabled && v.bounds.size.width > 160.0 && FDInsideDock(v)) FDPrepareMaterial(v);
+}
+%end
+
+// Whoever sets the corner radius of a dock material (SpringBoard, MaterialKit, ...), keep ours.
+%hook CALayer
+- (void)setCornerRadius:(CGFloat)radius {
+    if (gEnabled) {
+        static Class materialClass;
+        static dispatch_once_t once;
+        dispatch_once(&once, ^{ materialClass = NSClassFromString(@"MTMaterialView"); });
+        id d = self.delegate;
+        if (materialClass && d && [d isKindOfClass:materialClass] && FDInsideDock((UIView *)d)) {
+            radius = FDRadius();
+        }
+    }
+    %orig(radius);
 }
 %end
 
@@ -268,6 +338,13 @@ static void FDPrepareMaterial(UIView *v) {
 
 %ctor {
     FDLoadPrefs();
-    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenter(), NULL,
-        FDPrefsChanged, CFSTR(FD_NOTIFY), NULL, CFNotificationSuspensionBehaviorDeliverImmediately);
+    CFNotificationCenterRef dc = CFNotificationCenterGetDarwinNotifyCenter();
+    CFNotificationCenterAddObserver(dc, NULL, FDPrefsChanged, CFSTR(FD_NOTIFY), NULL,
+                                    CFNotificationSuspensionBehaviorDeliverImmediately);
+    for (NSString *n in @[@"com.apple.springboard.lockstate",
+                          @"com.apple.springboard.lockcomplete",
+                          @"com.apple.springboard.hasBlankedScreen"]) {
+        CFNotificationCenterAddObserver(dc, NULL, FDLockChanged, (__bridge CFStringRef)n, NULL,
+                                        CFNotificationSuspensionBehaviorCoalesce);
+    }
 }
