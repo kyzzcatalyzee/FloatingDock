@@ -175,6 +175,19 @@ static void FDRelayoutIcons(UIView *root, int depth) {
     }
 }
 
+// On the home button iPhone layout SpringBoard makes the dock material ~56pt wider and ~96pt
+// taller than the dock itself. Make it exactly as big as the dock so the floating look is right.
+static void FDFitMaterials(UIView *dock) {
+    CGRect want = CGRectMake(0, 0, dock.bounds.size.width, dock.bounds.size.height);
+    FDForEachDockMaterialFwd(dock, 0, ^(UIView *m) {
+        if (m.superview == dock && !CGRectEqualToRect(m.frame, want)) m.frame = want;
+    });
+    // The thin straight highlight line at the top of the stock dock does not fit a rounded dock.
+    for (UIView *v in dock.subviews) {
+        if ([NSStringFromClass(v.class) isEqualToString:@"SBHighlightView"]) v.hidden = gEnabled;
+    }
+}
+
 // Small log so we can compare the two device subtypes: /var/mobile/Library/FloatDock/log.txt
 #define FD_LOGDIR  @"/var/mobile/Library/FloatDock"
 #define FD_LOGFILE @"/var/mobile/Library/FloatDock/log.txt"
@@ -192,7 +205,7 @@ static void FDLog(NSString *line) {
 static void FDDumpDock(UIView *dock) {
     static CFAbsoluteTime last = 0;
     CFAbsoluteTime now = CFAbsoluteTimeGetCurrent();
-    if (now - last < 3.0) return;
+    if (now - last < 5.0) return;
     last = now;
     NSMutableString *m = [NSMutableString string];
     [m appendFormat:@"==== %@ model=%@ screen=%@ ====\n", [NSDate date],
@@ -233,7 +246,7 @@ static void FDApply(UIView *dock) {
         }
     } @catch (__unused NSException *ex) {}
     FDStyleBackground(dock, radius, 0);
-    if (!gEnabled) return;
+    if (!gEnabled) { FDFitMaterials(dock); return; }
 
     FDDumpDock(dock);
     CGRect target = FDTargetFrame(dock);
@@ -245,6 +258,7 @@ static void FDApply(UIView *dock) {
         FDRelayoutIcons(dock, 0);
         gAdjusting = NO;
     }
+    FDFitMaterials(dock);
 }
 
 static void FDReloadAll(void) {
@@ -348,6 +362,13 @@ static void FDLockChanged(CFNotificationCenterRef c, void *o, CFStringRef n, con
 // SpringBoard recreates the dock material after unlocking. Round it as soon as it appears,
 // before LiquidAss draws its glass, and again shortly after.
 %hook MTMaterialView
+- (void)setFrame:(CGRect)frame {
+    UIView *v = (UIView *)self;
+    if (gEnabled && v.superview && [NSStringFromClass(v.superview.class) isEqualToString:@"SBDockView"]) {
+        frame = CGRectMake(0, 0, v.superview.bounds.size.width, v.superview.bounds.size.height);
+    }
+    %orig(frame);
+}
 - (void)didMoveToSuperview {
     %orig;
     UIView *v = (UIView *)self;
