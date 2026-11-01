@@ -147,9 +147,12 @@ static void FDSpaceIcons(UIView *list) {
     }
     CGFloat total = n * iw + (n - 1) * gGap;
     CGFloat startX = (list.bounds.size.width - total) / 2.0;
+    // Vertically: the exact middle of the dock (not of the icon list, which starts a few points lower).
+    UIView *dockView = FDDockOf(list);
+    CGFloat cy = dockView ? (dockView.bounds.size.height / 2.0 - list.frame.origin.y) : 0;
     for (NSInteger i = 0; i < n; i++) {
         UIView *ic = icons[i];
-        ic.center = CGPointMake(startX + iw / 2.0 + i * (iw + gGap), ic.center.y);
+        ic.center = CGPointMake(startX + iw / 2.0 + i * (iw + gGap), dockView ? cy : ic.center.y);
     }
 }
 
