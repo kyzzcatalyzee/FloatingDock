@@ -110,17 +110,34 @@ static BOOL FDIsIconView(UIView *v) {
     return [cn containsString:@"IconView"] && ![cn containsString:@"List"] && ![cn containsString:@"Label"];
 }
 
+// Width of the icon picture itself (60 pt). The icon view can be wider (label area),
+// and that differs between the iPhone X and the home button iPhone layout.
+static CGFloat FDIconImageWidth(UIView *icon) {
+    @try {
+        id iv = [icon valueForKey:@"iconImageView"];
+        if ([iv isKindOfClass:[UIView class]] && ((UIView *)iv).bounds.size.width > 20.0)
+            return ((UIView *)iv).bounds.size.width;
+    } @catch (__unused NSException *ex) {}
+    for (UIView *sub in icon.subviews) {
+        if ([NSStringFromClass(sub.class) containsString:@"IconImageView"] && sub.bounds.size.width > 20.0)
+            return sub.bounds.size.width;
+    }
+    return icon.bounds.size.width;
+}
+
 static void FDSpaceIcons(UIView *list) {
     NSMutableArray<UIView *> *icons = [NSMutableArray array];
     for (UIView *v in list.subviews) {
-        if (FDIsIconView(v) && !v.hidden) [icons addObject:v];
+        if (!FDIsIconView(v) || v.hidden || v.alpha < 0.01) continue;
+        if (!CGRectIntersectsRect(v.frame, list.bounds)) continue;
+        [icons addObject:v];
     }
     if (!icons.count) return;
     [icons sortUsingComparator:^NSComparisonResult(UIView *a, UIView *b) {
         return a.center.x < b.center.x ? NSOrderedAscending : NSOrderedDescending;
     }];
     NSInteger n = (NSInteger)icons.count;
-    CGFloat iw = MAX(40.0, MIN(90.0, icons.firstObject.bounds.size.width));
+    CGFloat iw = MAX(40.0, MIN(90.0, FDIconImageWidth(icons.firstObject)));
 
     if (n != gCount || fabs(iw - gIconW) > 0.5) {
         gCount = n; gIconW = iw;
