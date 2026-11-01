@@ -36,6 +36,7 @@ static void FDLoadPrefs(void) {
 
 static CGFloat FDRadius(void) { return MIN(gRadius, gHeight / 2.0); }
 static void FDPrepareMaterial(UIView *v);
+static void FDForEachDockMaterialFwd(UIView *root, int depth, void (^block)(UIView *));
 
 static BOOL FDInsideDock(UIView *v) {
     for (UIView *a = v.superview; a; a = a.superview) {
@@ -136,8 +137,8 @@ static void FDSpaceIcons(UIView *list) {
     [icons sortUsingComparator:^NSComparisonResult(UIView *a, UIView *b) {
         return a.center.x < b.center.x ? NSOrderedAscending : NSOrderedDescending;
     }];
-    NSInteger n = (NSInteger)icons.count;
-    CGFloat iw = MAX(40.0, MIN(90.0, FDIconImageWidth(icons.firstObject)));
+    NSInteger n = MIN((NSInteger)icons.count, 6);
+    CGFloat iw = MAX(54.0, MIN(66.0, FDIconImageWidth(icons.firstObject)));
 
     if (n != gCount || fabs(iw - gIconW) > 0.5) {
         gCount = n; gIconW = iw;
@@ -174,6 +175,54 @@ static void FDRelayoutIcons(UIView *root, int depth) {
     }
 }
 
+// Small log so we can compare the two device subtypes: /var/mobile/Library/FloatDock/log.txt
+#define FD_LOGDIR  @"/var/mobile/Library/FloatDock"
+#define FD_LOGFILE @"/var/mobile/Library/FloatDock/log.txt"
+static void FDLog(NSString *line) {
+    NSFileManager *fm = [NSFileManager defaultManager];
+    [fm createDirectoryAtPath:FD_LOGDIR withIntermediateDirectories:YES attributes:nil error:nil];
+    NSDictionary *at = [fm attributesOfItemAtPath:FD_LOGFILE error:nil];
+    if ([at fileSize] > 30000) [fm removeItemAtPath:FD_LOGFILE error:nil];
+    NSFileHandle *h = [NSFileHandle fileHandleForWritingAtPath:FD_LOGFILE];
+    NSData *d = [[line stringByAppendingString:@"\n"] dataUsingEncoding:NSUTF8StringEncoding];
+    if (!h) { [d writeToFile:FD_LOGFILE atomically:NO]; return; }
+    [h seekToEndOfFile]; [h writeData:d]; [h closeFile];
+}
+
+static void FDDumpDock(UIView *dock) {
+    static CFAbsoluteTime last = 0;
+    CFAbsoluteTime now = CFAbsoluteTimeGetCurrent();
+    if (now - last < 3.0) return;
+    last = now;
+    NSMutableString *m = [NSMutableString string];
+    [m appendFormat:@"==== %@ model=%@ screen=%@ ====\n", [NSDate date],
+        [[UIDevice currentDevice] model], NSStringFromCGRect([UIScreen mainScreen].bounds)];
+    [m appendFormat:@"dock=%@ frame=%@ bounds=%@ super=%@ superBounds=%@\n", NSStringFromClass(dock.class),
+        NSStringFromCGRect(dock.frame), NSStringFromCGRect(dock.bounds),
+        NSStringFromClass(dock.superview.class), NSStringFromCGRect(dock.superview.bounds)];
+    [m appendFormat:@"prefs gap=%.0f pad=%.0f bottom=%.0f height=%.0f radius=%.0f count=%ld iconW=%.1f target=%@\n",
+        gGap, gPad, gBottom, gHeight, gRadius, (long)gCount, gIconW, NSStringFromCGRect(FDTargetFrame(dock))];
+    for (UIView *v in dock.subviews) {
+        [m appendFormat:@"  sub %@ frame=%@ r=%.1f hidden=%d alpha=%.2f\n", NSStringFromClass(v.class),
+            NSStringFromCGRect(v.frame), v.layer.cornerRadius, v.hidden, v.alpha];
+        if ([NSStringFromClass(v.class) containsString:@"IconListView"]) {
+            for (UIView *ic in v.subviews) {
+                [m appendFormat:@"    icon %@ frame=%@ imgW=%.1f hidden=%d alpha=%.2f\n", NSStringFromClass(ic.class),
+                    NSStringFromCGRect(ic.frame), FDIconImageWidth(ic), ic.hidden, ic.alpha];
+            }
+        }
+    }
+    FDForEachDockMaterialFwd(dock, 0, ^(UIView *mat) {
+        [m appendFormat:@"  material frame=%@ r=%.1f super=%@\n", NSStringFromCGRect(mat.frame),
+            mat.layer.cornerRadius, NSStringFromClass(mat.superview.class)];
+        for (UIView *g in mat.superview.subviews) {
+            if ([NSStringFromClass(g.class) containsString:@"LGLiveBackdropView"])
+                [m appendFormat:@"  glass frame=%@ r=%.1f\n", NSStringFromCGRect(g.frame), g.layer.cornerRadius];
+        }
+    });
+    FDLog(m);
+}
+
 static void FDApply(UIView *dock) {
     if (gAdjusting || !dock.superview) return;
     CGFloat radius = gEnabled ? FDRadius() : 0;
@@ -186,6 +235,7 @@ static void FDApply(UIView *dock) {
     FDStyleBackground(dock, radius, 0);
     if (!gEnabled) return;
 
+    FDDumpDock(dock);
     CGRect target = FDTargetFrame(dock);
     if (!CGRectEqualToRect(dock.frame, target)) {
         gAdjusting = YES;
@@ -243,6 +293,9 @@ static void FDForEachDockMaterial(UIView *root, int depth, void (^block)(UIView 
         if ([NSStringFromClass(v.class) isEqualToString:@"MTMaterialView"]) block(v);
         FDForEachDockMaterial(v, depth + 1, block);
     }
+}
+static void FDForEachDockMaterialFwd(UIView *root, int depth, void (^block)(UIView *)) {
+    FDForEachDockMaterial(root, depth, block);
 }
 
 // Re-round everything in every dock and re-sync the glass.
