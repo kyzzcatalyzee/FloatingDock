@@ -52,11 +52,12 @@ static UIView *FDDockOf(UIView *v) {
     return nil;
 }
 
-// Dock width follows the icons: icons + gaps + padding on both sides.
+// Dock width is fixed to a full dock (at least 4 icon slots), like the iPhone X dock:
+// removing icons does not shrink it, the remaining icons stay centered.
 static CGRect FDTargetFrame(UIView *dock) {
     CGRect p = dock.superview.bounds;
     if (CGRectIsEmpty(p)) return dock.frame;
-    CGFloat n = MAX(1, gCount);
+    CGFloat n = MAX(4, gCount);
     CGFloat w = n * gIconW + (n - 1) * gGap + gPad * 2.0;
     w = MIN(w, p.size.width - 20.0);
     return CGRectMake(CGRectGetMidX(p) - w / 2.0, CGRectGetMaxY(p) - gBottom - gHeight, w, gHeight);
